@@ -1,5 +1,5 @@
 from app.controller.projects_controller import (add_project,
-                                                   olamundo, 
+                                             
                                                    show_project_detail,
                                                    delete_project,
                                                    shutdown_session)
