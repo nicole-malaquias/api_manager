@@ -1,13 +1,13 @@
 import json
 
 import requests
+import sqlalchemy
+import psycopg2
 from app.configs.database import db
 from app.exc.PackegeErrors import InvalidPackageError
-from app.model.project_model import Project
 from app.model.packege_release_model import PackageRelease
-
+from app.model.project_model import Project
 from flask import jsonify, request
-
 
 
 def add_project():
@@ -29,13 +29,11 @@ def add_project():
             name_tech = tech['name']
                         
             request = requests.get(f'https://pypi.org/pypi/{name_tech}/json')
+           
             response = json.loads(request.content)
             
-           
-           
             if not 'version' in tech :
-                
-              
+                   
                 version = response['info']['version'] 
             
                 package = PackageRelease(name = name_tech, version = version, project_id = project.id)
@@ -57,9 +55,17 @@ def add_project():
         return jsonify(data)
     
     
-    except InvalidPackageError : 
-       return {"error": "One or more packages doesn't exist"}
+    except (InvalidPackageError,json.decoder.JSONDecodeError ) : 
+       return {"Message": "One or more packages doesn't exist"},402
     
+    except sqlalchemy.exc.IntegrityError as e :
+        
+        if type(e.orig) == psycopg2.errors.NotNullViolation:
+            return {'Message': str(e.orig).split('\n')[0]}, 400
+        
+        if type(e.orig) ==  psycopg2.errors.UniqueViolation:
+            return {'Message': str(e.orig).split('\n')[0]}, 402    
+
 def show_project_detail(project_name):
    
   
@@ -71,7 +77,7 @@ def delete_project(project_name):
     
     query = Project.query.filter( Project.name == project_name ).all()[0]
     if query is None:
-         return {"msg":"Project not found!"}
+         return {"Message":"Project not found!"},404
      
      
     db.session.delete(query)
