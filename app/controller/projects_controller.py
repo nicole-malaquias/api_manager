@@ -84,6 +84,8 @@ def delete_project(project_name):
     db.session.commit()
     return "",204
 
+
+
 #@app.teardown_appcontext
 def shutdown_session(exception=None):
     
